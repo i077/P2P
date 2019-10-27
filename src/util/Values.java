@@ -1,3 +1,5 @@
+package util;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,16 +13,12 @@ import java.net.UnknownHostException;
  */
 public class Values {
     // MESSAGES
-    static String WELCOME_MSG = "Welcome to the Peer-to-Peer network!";
-    static String WELCOME_IP = "Your current IP address is: " + ownIPAddr();
-
-    private static String OWNIPADDR_ERR = "Something went wrong when trying to get this host's IP address.";
-
-    private static String IPCHECK_URL = "http://checkip.amazonaws.com";
-
+    public static String WELCOME_MSG = "Starting P2P node...";
+    public static String WELCOME_IP() { return "Your current IP address is: " + ownIPAddr(); }
 
     // NETWORK VALUES
 
+    private static String IPCHECK_URL = "http://checkip.amazonaws.com";
     public static int PORT_RANGE_START = 50320;
 
     // UTILITIES
@@ -43,6 +41,7 @@ public class Values {
             return br.readLine();
         } catch (IOException e) {
             System.err.println("Using external checkip service failed, trying InetAddress.");
+            e.printStackTrace();
         }
 
         // At this point, using the URL didn't work,
@@ -55,7 +54,7 @@ public class Values {
             thisHost = InetAddress.getLocalHost();
             thisHostIP = InetAddress.getByName(thisHost.getHostName()).getHostAddress();
         } catch (UnknownHostException e) {
-            System.err.println(OWNIPADDR_ERR);
+            System.err.println("Something went wrong when trying to get this host's IP address.");
             e.printStackTrace();
             System.exit(-1);
         }
