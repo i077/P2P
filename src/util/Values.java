@@ -9,17 +9,13 @@ import java.net.URL;
 import java.net.UnknownHostException;
 
 /**
- * Class used to provide values such as strings, port numbers, and IP addresses.
+ * Class used to provide values such as IP addresses.
  */
 public class Values {
-    // MESSAGES
-    public static String WELCOME_MSG = "Starting P2P node...";
+    public static String BROADCAST_IP = "129.22.23.255";
     public static String WELCOME_IP() { return "Your current IP address is: " + ownIPAddr(); }
 
-    // NETWORK VALUES
-
     private static String IPCHECK_URL = "http://checkip.amazonaws.com";
-    public static int PORT_RANGE_START = 50320;
 
     // UTILITIES
 
@@ -32,7 +28,7 @@ public class Values {
      * Failing that, exit abnormally since an IP address could not be resolved.
      * @return A string containing the IP address, hopefully the external address, of this host
      */
-    private static String ownIPAddr() {
+    public static String ownIPAddr() {
         // First try contacting AWS for IP address
         try {
             URL checkIPURL = new URL(IPCHECK_URL);
@@ -40,8 +36,7 @@ public class Values {
             BufferedReader br = new BufferedReader(new InputStreamReader(checkIPStream));
             return br.readLine();
         } catch (IOException e) {
-            System.err.println("Using external checkip service failed, trying InetAddress.");
-            e.printStackTrace();
+            Log.e(Messages.ERR_CHECKIP, e);
         }
 
         // At this point, using the URL didn't work,
@@ -54,9 +49,7 @@ public class Values {
             thisHost = InetAddress.getLocalHost();
             thisHostIP = InetAddress.getByName(thisHost.getHostName()).getHostAddress();
         } catch (UnknownHostException e) {
-            System.err.println("Something went wrong when trying to get this host's IP address.");
-            e.printStackTrace();
-            System.exit(-1);
+            Log.fatal(Messages.ERR_INETHOSTIP, e, -1);
         }
 
         return thisHostIP;

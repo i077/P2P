@@ -23,7 +23,7 @@ import java.util.ArrayList;
  */
 public class PeerConfig {
     public final int udpServerPort, udpClientPort;
-    public final ArrayList<Integer> tcpNeighborPorts;
+    public final ArrayList<Integer> availTCPPorts;
     public final ArrayList<File> sharedFileList;
 
     /**
@@ -44,14 +44,14 @@ public class PeerConfig {
             udpClientPort = Integer.parseInt(udpClientPortText);
 
             // Read in TCP ports
-            tcpNeighborPorts = new ArrayList<>();
+            availTCPPorts = new ArrayList<>();
             String remainingLine;
             while ((remainingLine = br.readLine()) != null) {
-                tcpNeighborPorts.add(Integer.parseInt(remainingLine));
+                availTCPPorts.add(Integer.parseInt(remainingLine));
             }
         }
 
-        // Read in shared files.
+        // Read in shared files
         sharedFileList = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(configSharing))) {
             String path;
