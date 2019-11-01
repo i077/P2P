@@ -6,7 +6,10 @@ import util.PeerConfig;
 import util.Values;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +20,8 @@ import java.util.Map;
  */
 public class DiscoveryClient {
     private DatagramSocket udpSocket;
+
+    // Different threads will access this, so make it volatile
     private volatile boolean listenerRunning;
 
     private Map<String, Integer> discoveryPeers; // Maps IP to port.
@@ -63,18 +68,20 @@ public class DiscoveryClient {
      * - A ping, in which case we should add the sender to our peers, send a pong, and propagate the ping, or
      * - A pong, which signifies an acknowledgement of a sent discovery packet. In this case, we open a new socket.
      * Since this should only happen when we issue the "connect" command to the sender of this packet, this is handled
-     * by a Timer.
+     * by a Timer as setup by sendConnectPing().
      *
      * @param packet The packet that was received
      */
     private void processPacket(DatagramPacket packet) {
-        String pktMessage = new String(packet.getData());
+        byte[] pktData = packet.getData();
+        String pktMessage = new String(pktData);
 
         String[] msgParts = pktMessage.split(":");
         switch(msgParts[0]) {
             case "PI": // This packet is a ping
                 String pingIP = msgParts[1];
                 int pingPort = Integer.parseInt(msgParts[2]);
+                Log.i(Messages.PING_RECV + Values.ipPortStr(pingIP, pingPort));
 
                 // If we haven't seen this peer before, process it
                 if (!discoveryPeers.containsKey(pingIP)) {
@@ -89,8 +96,48 @@ public class DiscoveryClient {
                 }
                 break;
             case "PO": // This packet is a pong
+                Log.i(Messages.PONG_RECV + Values.ipPortStr(msgParts[1], Integer.parseInt(msgParts[2])));
                 pongs.add(pktMessage);
         }
+    }
+
+    /**
+     * Propagate a given ping message to each of this host's neighbors.
+     *
+     * @param pingMsgData Packet data of ping
+     * @param pingIP Ping's sender's IP address
+     */
+    private void propagatePing(byte[] pingMsgData, String pingIP) {
+        for (Map.Entry<String, Integer> peer : discoveryPeers.entrySet()) {
+            String peerIP = peer.getKey();
+            int peerPort = peer.getValue();
+
+            // Don't send this ping to its sender
+            if (!peerIP.equals(pingIP)) {
+                try {
+                    sendPing(pingMsgData, peerIP, peerPort);
+                } catch (IOException e) {
+                    Log.e(Messages.ERR_UDP_PKTSEND, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Send a constructed ping to a specified destination.
+     *
+     * @param pingMsgData Packet data of ping
+     * @param destIP IP address of destination
+     * @param destPort Port number of destination
+     */
+    private void sendPing(byte[] pingMsgData, String destIP, int destPort) throws IOException {
+        Log.i(Messages.PING_SEND + Values.ipPortStr(destIP, destPort));
+
+        InetAddress destAddr = InetAddress.getByName(destIP);
+        DatagramPacket pingPkt = new DatagramPacket(pingMsgData, pingMsgData.length, destAddr, destPort);
+
+        // Send ping!
+        udpSocket.send(pingPkt);
     }
 
     /**
@@ -100,6 +147,8 @@ public class DiscoveryClient {
      * @param pingPort The ping's sender's port number
      */
     private void sendPong(String pingIP, int pingPort) throws IOException {
+        Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
+
         // Construct pong, attaching this host's IP address and port
         String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.welcomePort;
         byte[] pongMsgData = pongMsgBuilder.getBytes();

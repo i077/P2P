@@ -29,9 +29,16 @@ public class p2p {
         } catch (IOException e) {
             Log.fatal(Messages.ERR_PEERCONFIG, e, -1);
         }
+        assert config != null;
 
         // Start the shell
-        shell(new Peer(config));
+        Peer peer = null;
+        try {
+            peer = new Peer(config);
+        } catch (IOException e) {
+            Log.fatal("", e, 1);
+        }
+        shell(peer);
     }
 
     /**

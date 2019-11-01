@@ -17,7 +17,22 @@ public class Values {
 
     private static String IPCHECK_URL = "http://checkip.amazonaws.com";
 
+    // Time between (expected) heartbeats, in ms
+    public static int HEARTBEAT_INTERVAL = 30000;
+    public static int READER_INTERVAL = 100;
+
     // UTILITIES
+
+    /**
+     * Combine an IP address and port number into a single string.
+     *
+     * @param ip An IP address
+     * @param port A port number
+     * @return A string of the form "{ip}:{port}"
+     */
+    public static String ipPortStr(String ip, int port) {
+        return ip + ":" + port;
+    }
 
     /**
      * Get the external IP of the host running this program.

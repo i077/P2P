@@ -1,7 +1,7 @@
 package msg;
 
 import java.net.InetAddress;
-import java.util.Random;
+import java.util.Objects;
 
 /**
  * Instances of this data class represent queries for files exchanged between peers.
@@ -17,7 +17,7 @@ public class Query extends PeerMessage {
      * @param filename The name of the file to query.
      */
     public Query(String filename) {
-        this.id = new Random().nextInt(Integer.MAX_VALUE);
+        super();
         this.filename = filename;
     }
 
@@ -33,7 +33,27 @@ public class Query extends PeerMessage {
         this.filename = filename;
     }
 
-    public String getFilepath() {
+    public String getFilename() {
         return filename;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || this.getClass() != obj.getClass())
+            return false;
+        Query that = (Query) obj;
+        return this.id == that.id && this.filename.equals(that.filename);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, filename);
+    }
+
+    @Override
+    public String toString() {
+        return "Q:" + id + ";"  + filename;
     }
 }

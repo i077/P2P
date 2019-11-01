@@ -17,8 +17,9 @@ public class Peer {
     private DiscoveryClient discoveryClient;
 
     private Map<Integer, Query> queries;
+    private Map<String, Connection> connections; // Maps IP address to connection
 
-    Peer(PeerConfig config) throws IOException {
+    public Peer(PeerConfig config) throws IOException {
         welcomeSocket = new ServerSocket(config.udpServerPort);
     }
 }
