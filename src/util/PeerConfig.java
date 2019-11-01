@@ -22,7 +22,8 @@ import java.util.ArrayList;
  *  Each line is a path, implied to start from "~/p2p/shared/", to a file (that must exist) in ~/p2p/shared/
  */
 public class PeerConfig {
-    public final int udpServerPort, udpClientPort;
+    public final int udpServerPort, udpClientPort,
+        welcomePort;
     public final ArrayList<Integer> availTCPPorts;
     public final ArrayList<File> sharedFileList;
 
@@ -40,8 +41,10 @@ public class PeerConfig {
             // Read in UDP ports
             String udpServerPortText = br.readLine();
             String udpClientPortText = br.readLine();
+            String welcomePortText = br.readLine();
             udpServerPort = Integer.parseInt(udpServerPortText);
             udpClientPort = Integer.parseInt(udpClientPortText);
+            welcomePort = Integer.parseInt(welcomePortText);
 
             // Read in TCP ports
             availTCPPorts = new ArrayList<>();
