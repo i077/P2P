@@ -2,7 +2,6 @@ import net.Peer;
 import util.Log;
 import util.Messages;
 import util.PeerConfig;
-import util.Values;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
@@ -20,7 +19,7 @@ public class p2p {
      */
     public static void main(String[] args) {
         System.out.println(Messages.WELCOME_MSG);
-        System.out.println(Values.WELCOME_IP());
+        System.out.println(Messages.WELCOME_IP());
 
         // Read config
         PeerConfig config = null;
@@ -86,7 +85,7 @@ public class p2p {
                     break;
                 case "leave":
                 case "Leave":
-                    // TODO close all neighboring connections
+                    peer.closeAllConnections();
                     break;
                 case "exit":
                 case "Exit":

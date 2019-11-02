@@ -27,7 +27,7 @@ public class Connection {
     private Socket connectionSocket;
 
     private Map<Integer, Query> queries;
-    private final Map<String, Connection> connections;
+    private final Map<InetAddress, Connection> connections;
 
     private final List<File> sharedFileList;
 
@@ -42,12 +42,12 @@ public class Connection {
      */
     public Thread listener;
 
-    public Connection(InetAddress ip, int port,
+    public Connection(Socket socket,
                       Map<Integer, Query> queries,
-                      Map<String, Connection> connections,
-                      PeerConfig config) throws IOException {
-        this.neighborAddr = ip;
-        this.connectionSocket = new Socket(ip, port);
+                      Map<InetAddress, Connection> connections,
+                      PeerConfig config) {
+        this.neighborAddr = socket.getInetAddress();
+        this.connectionSocket = socket;
         this.queries = queries;
         this.connections = connections;
         this.sharedFileList = config.sharedFileList;
@@ -64,19 +64,20 @@ public class Connection {
                     @Override
                     public void run() {
                         // Send a heartbeat if we've seen one and the socket is still alive, close otherwise
-                        if (isAlive() &&
+                        if (Connection.this.isAlive() &&
                                 System.currentTimeMillis() - lastHeartbeatTime < Values.HEARTBEAT_INTERVAL) {
                             Log.i(Messages.HBEAT_SEND + neighborAddr.getHostAddress());
 
                             // Send heartbeat!
                             try {
-                                sendPeerMessage(new Heartbeat());
+                                Connection.this.sendPeerMessage(new Heartbeat());
                             } catch (IOException e) {
-                                Log.e(Messages.ERR_HBEATSEND(neighborAddr.getHostAddress()), e);
+                                if (Connection.this.isAlive())
+                                    Log.e(Messages.ERR_HBEATSEND(neighborAddr.getHostAddress()), e);
                             }
                         } else {
                             Log.i(Messages.HBEAT_TOUT(neighborAddr.getHostAddress()));
-                            teardown();
+                            Connection.this.teardown();
                         }
                     }
                 }, 0, Values.HEARTBEAT_INTERVAL);
@@ -91,11 +92,14 @@ public class Connection {
                             try {
                                 recvLen = connectionSocket.getInputStream().read(recvBuf);
                             } catch (IOException e) {
-                                Log.e(Messages.ERR_CONNREAD(neighborAddr.getHostAddress()), e);
+                                // Only log an error if the connection is still alive, otherwise stop
+                                if (Connection.this.isAlive())
+                                    Log.e(Messages.ERR_CONNREAD(neighborAddr.getHostAddress()), e);
+                                else return;
                             }
-                        } while (isAlive() && recvLen < 0);
+                        } while (Connection.this.isAlive() && recvLen < 0);
 
-                        processPacket(recvBuf, recvLen);
+                        Connection.this.processPacket(recvBuf, recvLen);
                     }
                 }, 0, Values.READER_INTERVAL);
             }
@@ -110,7 +114,7 @@ public class Connection {
      * @return true if the socket is connected, false otherwise
      */
     public boolean isAlive() {
-        return connectionSocket.isConnected();
+        return !connectionSocket.isClosed() && connectionSocket.isConnected();
     }
 
     /**

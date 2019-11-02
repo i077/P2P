@@ -37,6 +37,7 @@ public class Log {
         System.err.println(err);
         if (e != null)
             e.printStackTrace();
+        System.err.flush();
         System.out.print(PROMPT);
     }
 

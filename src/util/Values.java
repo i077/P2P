@@ -12,8 +12,6 @@ import java.net.UnknownHostException;
  * Class used to provide values such as IP addresses.
  */
 public class Values {
-    public static String BROADCAST_IP = "129.22.23.255";
-    public static String WELCOME_IP() { return "Your current IP address is: " + ownIPAddr(); }
 
     private static String IPCHECK_URL = "http://checkip.amazonaws.com";
 
@@ -21,7 +19,7 @@ public class Values {
     public static int HEARTBEAT_INTERVAL = 30000;
     public static int READER_INTERVAL = 100;
 
-    public static int PONGWAIT_INTERVAL = 1000;
+    public static int PONGWAIT_INTERVAL = 5000;
 
     // UTILITIES
 

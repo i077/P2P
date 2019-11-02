@@ -25,6 +25,7 @@ public class DiscoveryClient {
     private final List<String> recvdPongs;
 
     private int udpPort;
+    private final int welcomePort; // Needed for sending pongs.
 
     /**
      * Thread that will listen on the socket for new packets.
@@ -33,6 +34,7 @@ public class DiscoveryClient {
 
     DiscoveryClient(PeerConfig config) throws SocketException {
         this.udpPort = config.udpClientPort;
+        this.welcomePort = config.welcomePort;
         this.udpSocket = new DatagramSocket(this.udpPort);
 
         discoveredPeers = new HashMap<>();
@@ -69,7 +71,7 @@ public class DiscoveryClient {
      * @param ip IP address of the peer
      * @param port Port of the peer
      */
-    void sendConnectPing(final Peer peer, String ip, int port) throws IOException {
+    void sendConnectPing(final Peer peer, String ip, final int port) throws IOException {
         // Create and send ping
         String pingMsg = "PI:" + Values.ownIPAddr() + ":" + this.udpPort + "\004";
         sendPing(pingMsg.getBytes(), ip, port);
@@ -77,29 +79,44 @@ public class DiscoveryClient {
         discoveredPeers.put(ip, port);
 
         // Wait for pong, then connect to two peers
-        Thread pongListener = new Thread(new Runnable() {
+        final Thread pongListener = new Thread(new Runnable() {
             @Override
             public void run() {
-                // Wait for recvdPongs to fill.
+                // Wait for recvdPongs to fill (or until timeout).
                 synchronized (recvdPongs) {
                     try {
-                        recvdPongs.wait();
+                        recvdPongs.wait(Values.PONGWAIT_INTERVAL);
                     } catch (InterruptedException ignored) {}
+                    // Ignore if this thread was interrupted,
+                    // because that probably means someone called teardown() or is otherwise exiting the peer.
                 }
 
                 // At this point, we've received at least one pong, so we should connect to two random peers.
-                if (!recvdPongs.isEmpty()) {
-                    Random r = new Random();
-                    for (int i = 0; i < 2; i++) {
-                        if (recvdPongs.isEmpty())
-                            break;
-                        String recvdPong = recvdPongs.get(r.nextInt(recvdPongs.size()));
-                        // TODO establish connection
+                if (recvdPongs.isEmpty()) {
+                    Log.e(Messages.ERR_NOPONGS);
+                    return;
+                }
+                Random r = new Random();
+                for (int i = 0; i < 2; i++) {
+                    if (recvdPongs.isEmpty())
+                        break;
+                    String recvdPong = recvdPongs.get(r.nextInt(recvdPongs.size()));
+                    // Extract IP address and port from pong
+                    String[] pongMsgParts = recvdPong.trim().split(":");
+                    String pongIP = pongMsgParts[1];
+                    int pongPort = Integer.parseInt(pongMsgParts[2]);
+
+                    // Tell the calling peer to establish a connection
+                    try {
+                        peer.addNeighbor(pongIP, pongPort);
                         recvdPongs.remove(recvdPong);
+                    } catch (IOException e) {
+                        Log.e(Messages.CONN_FAILURE(pongIP), e);
                     }
                 }
             }
         });
+        // This thread shouldn't keep the peer alive.
         pongListener.setDaemon(true);
         pongListener.start();
     }
@@ -127,15 +144,17 @@ public class DiscoveryClient {
                 int pingPort = Integer.parseInt(msgParts[2]);
                 Log.i(Messages.PING_RECV + Values.ipPortStr(pingIP, pingPort));
 
-                // If we haven't seen this peer before, process it
+                // Send a response pong
+                try {
+                    sendPong(pingIP, pingPort);
+                } catch (IOException e) {
+                    Log.e(Messages.ERR_UDP_PKTSEND, e);
+                }
+
+                // If we haven't seen this peer before, propagate it
                 if (!discoveredPeers.containsKey(pingIP)) {
                     discoveredPeers.put(pingIP, pingPort);
 
-                    try {
-                        sendPong(pingIP, pingPort);
-                    } catch (IOException e) {
-                        Log.e(Messages.ERR_UDP_PKTSEND, e);
-                    }
                     propagatePing(pktData, pingIP);
                 }
                 break;
@@ -197,7 +216,7 @@ public class DiscoveryClient {
         Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
 
         // Construct pong, attaching this host's IP address and port
-        String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.udpPort + "\004";
+        String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.welcomePort + "\004";
         byte[] pongMsgData = pongMsgBuilder.getBytes();
         InetAddress destAddr = InetAddress.getByName(pingIP);
         DatagramPacket pongPkt = new DatagramPacket(pongMsgData, pongMsgData.length, destAddr, pingPort);

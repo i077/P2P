@@ -6,14 +6,23 @@ package util;
 public class Messages {
     // Debug / logging messages
     public static String WELCOME_MSG = "Starting P2P node...";
-    public static String PEER_LISTENER_START = "Starting discovery server...";
-    public static String PEER_BROADCASTER_START = "Starting discovery client...";
-    public static String SHELL_READY = "Ready. Type a command or 'help' for help.";
+    public static String WELCOME_IP() { return "Your current IP address is: " + Values.ownIPAddr(); }
+    public static String SHELL_READY = "Ready. Type a command.";
 
     public static String PING_SEND = "Sending ping to ";
     public static String PING_RECV = "Received ping from ";
     public static String PONG_SEND = "Sending pong to ";
     public static String PONG_RECV = "Received pong from ";
+
+    public static String CONN_ACPT(String ip) {
+        return "Accepting new connection from " + ip + ".";
+    }
+    public static String CONN_FAILURE(String ip) {
+        return "Failed to establish a new connection with " + ip + ".";
+    }
+    public static String CONN_SUCCESS(String ip) {
+        return "Successfully established new connection with " + ip + ".";
+    }
 
     public static String HBEAT_SEND = "Sending heartbeat to ";
     public static String HBEAT_TOUT(String ip) {
@@ -22,6 +31,10 @@ public class Messages {
     public static String HBEAT_RECV(String ip) {
         return "Heartbeat recevied from " + ip + ".";
     }
+
+    public static String TRDN_CONNCLOSING = "Closing all neighboring connections.";
+    public static String TRDN_NOCONNS = "No connections to close.";
+    public static String TRDN_CONNCLOSED = "Successfully closed all neighboring connections and left the P2P network.";
 
     // Error messages
     public static String SHELL_CNF = " is not a valid command.";
@@ -37,6 +50,7 @@ public class Messages {
 
     public static String ERR_NOPONGS = "No pongs received after " + Values.PONGWAIT_INTERVAL + "ms.";
 
+    public static String ERR_WLCMACCEPT = "There was a problem accepting a new connection from the welcome socket.";
     public static String ERR_HBEATSEND(String ip) {
         return "There was a problem sending a heartbeat to " + ip + ".";
     }
