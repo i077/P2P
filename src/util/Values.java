@@ -43,13 +43,13 @@ public class Values {
      * Failing that, exit abnormally since an IP address could not be resolved.
      * @return A string containing the IP address, hopefully the external address, of this host
      */
-    public static String ownIPAddr() {
+    public static InetAddress ownIPAddr() {
         // First try contacting AWS for IP address
         try {
             URL checkIPURL = new URL(IPCHECK_URL);
             InputStream checkIPStream = checkIPURL.openStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(checkIPStream));
-            return br.readLine();
+            return InetAddress.getByName(br.readLine());
         } catch (IOException e) {
             Log.e(Messages.ERR_CHECKIP, e);
         }
@@ -57,16 +57,15 @@ public class Values {
         // At this point, using the URL didn't work,
         // so we use the JDK's InetAddress to try to get an IP address.
         // This may by the address of the loopback interface in some conditions.
-        InetAddress thisHost;
-        String thisHostIP = null;
+        InetAddress thisHost = null;
 
         try {
             thisHost = InetAddress.getLocalHost();
-            thisHostIP = InetAddress.getByName(thisHost.getHostName()).getHostAddress();
         } catch (UnknownHostException e) {
             Log.fatal(Messages.ERR_INETHOSTIP, e, -1);
         }
+        assert thisHost != null;
 
-        return thisHostIP;
+        return thisHost;
     }
 }

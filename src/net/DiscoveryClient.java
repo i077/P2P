@@ -73,7 +73,7 @@ public class DiscoveryClient {
      */
     void sendConnectPing(final Peer peer, String ip, final int port) throws IOException {
         // Create and send ping
-        String pingMsg = "PI:" + Values.ownIPAddr() + ":" + this.udpPort + "\004";
+        String pingMsg = "PI:" + Values.ownIPAddr().getHostAddress() + ":" + this.udpPort + "\004";
         sendPing(pingMsg.getBytes(), ip, port);
 
         discoveredPeers.put(ip, port);
@@ -216,7 +216,7 @@ public class DiscoveryClient {
 //        Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
 
         // Construct pong, attaching this host's IP address and port
-        String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.welcomePort + "\004";
+        String pongMsgBuilder = "PO:" + Values.ownIPAddr().getHostAddress() + ":" + this.welcomePort + "\004";
         byte[] pongMsgData = pongMsgBuilder.getBytes();
         InetAddress destAddr = InetAddress.getByName(pingIP);
         DatagramPacket pongPkt = new DatagramPacket(pongMsgData, pongMsgData.length, destAddr, pingPort);

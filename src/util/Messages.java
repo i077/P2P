@@ -8,7 +8,7 @@ import msg.Query;
 public class Messages {
     // Debug / logging messages
     public static String WELCOME_MSG = "Starting P2P node...";
-    public static String WELCOME_IP() { return "Your current IP address is: " + Values.ownIPAddr(); }
+    public static String WELCOME_IP() { return "Your current IP address is: " + Values.ownIPAddr().getHostAddress(); }
     public static String SHELL_READY = "Ready. Type a command.";
 
     public static String PING_SEND = "Sending ping to ";
