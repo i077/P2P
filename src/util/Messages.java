@@ -19,9 +19,13 @@ public class Messages {
     public static String HBEAT_TOUT(String ip) {
         return "No heartbeat received from " + ip + " in a while. Closing connection.";
     }
+    public static String HBEAT_RECV(String ip) {
+        return "Heartbeat recevied from " + ip + ".";
+    }
 
     // Error messages
     public static String SHELL_CNF = " is not a valid command.";
+    public static String CONNECT_USAGE = "Usage: connect <IP> <port>";
 
     public static String ERR_PEERCONFIG = "There was a problem reading the peer configuration.";
     public static String ERR_CHECKIP = "Using external checkip service failed, trying InetAddress.";
@@ -30,6 +34,8 @@ public class Messages {
     public static String ERR_UDP_PKTRECV = "There was a problem receiving a packet from the UDP socket.";
     public static String ERR_UDP_PKTSEND = "There was a problem sending a packet through the UDP socket.";
     public static String ERR_UDP_PORTOPEN = "There was a problem opening a UDP socket.";
+
+    public static String ERR_NOPONGS = "No pongs received after " + Values.PONGWAIT_INTERVAL + "ms.";
 
     public static String ERR_HBEATSEND(String ip) {
         return "There was a problem sending a heartbeat to " + ip + ".";
@@ -40,4 +46,6 @@ public class Messages {
     }
 
     public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";
+
+    public static String CONN_PKTWEIRD = "Received an unrecognized packet.";
 }

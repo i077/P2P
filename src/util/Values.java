@@ -21,6 +21,8 @@ public class Values {
     public static int HEARTBEAT_INTERVAL = 30000;
     public static int READER_INTERVAL = 100;
 
+    public static int PONGWAIT_INTERVAL = 1000;
+
     // UTILITIES
 
     /**

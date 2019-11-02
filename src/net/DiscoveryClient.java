@@ -10,10 +10,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Class that sends discovery packets to other peers, forming the P2P network.
@@ -24,22 +21,22 @@ public class DiscoveryClient {
     // Different threads will access this, so make it volatile
     private volatile boolean listenerRunning;
 
-    private Map<String, Integer> discoveryPeers; // Maps IP to port.
-    private List<String> pongs;
+    private Map<String, Integer> discoveredPeers; // Maps IP to port.
+    private final List<String> recvdPongs;
 
-    private int welcomePort;
+    private int udpPort;
 
     /**
      * Thread that will listen on the socket for new packets.
      */
     public Thread listener;
 
-    public DiscoveryClient(PeerConfig config) throws SocketException {
-        this.welcomePort = config.welcomePort;
-        this.udpSocket = new DatagramSocket(config.udpClientPort);
+    DiscoveryClient(PeerConfig config) throws SocketException {
+        this.udpPort = config.udpClientPort;
+        this.udpSocket = new DatagramSocket(this.udpPort);
 
-        discoveryPeers = new HashMap<>();
-        pongs = new ArrayList<>();
+        discoveredPeers = new HashMap<>();
+        recvdPongs = new ArrayList<>();
 
         listener = new Thread(new Runnable() {
             @Override
@@ -52,12 +49,59 @@ public class DiscoveryClient {
                     try {
                         udpSocket.receive(recvPacket);
                     } catch (IOException e) {
-                        Log.e(Messages.ERR_UDP_PKTRECV, e);
+                        // Log an error only if the listener should be running.
+                        // If it isn't, we can assume the socket was closed and ignore the thrown exception,
+                        // which will probably say as much.
+                        if (listenerRunning)
+                            Log.e(Messages.ERR_UDP_PKTRECV, e);
                     }
                     processPacket(recvPacket);
                 }
             }
         });
+        // The listener should not keep the peer running.
+        listener.setDaemon(true);
+    }
+
+    /**
+     * Send a ping to a specified peer and wait for a pong.
+     *
+     * @param ip IP address of the peer
+     * @param port Port of the peer
+     */
+    void sendConnectPing(final Peer peer, String ip, int port) throws IOException {
+        // Create and send ping
+        String pingMsg = "PI:" + Values.ownIPAddr() + ":" + this.udpPort + "\004";
+        sendPing(pingMsg.getBytes(), ip, port);
+
+        discoveredPeers.put(ip, port);
+
+        // Wait for pong, then connect to two peers
+        Thread pongListener = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // Wait for recvdPongs to fill.
+                synchronized (recvdPongs) {
+                    try {
+                        recvdPongs.wait();
+                    } catch (InterruptedException ignored) {}
+                }
+
+                // At this point, we've received at least one pong, so we should connect to two random peers.
+                if (!recvdPongs.isEmpty()) {
+                    Random r = new Random();
+                    for (int i = 0; i < 2; i++) {
+                        if (recvdPongs.isEmpty())
+                            break;
+                        String recvdPong = recvdPongs.get(r.nextInt(recvdPongs.size()));
+                        // TODO establish connection
+                        recvdPongs.remove(recvdPong);
+                    }
+                }
+            }
+        });
+        pongListener.setDaemon(true);
+        pongListener.start();
     }
 
     /**
@@ -84,20 +128,23 @@ public class DiscoveryClient {
                 Log.i(Messages.PING_RECV + Values.ipPortStr(pingIP, pingPort));
 
                 // If we haven't seen this peer before, process it
-                if (!discoveryPeers.containsKey(pingIP)) {
-                    discoveryPeers.put(pingIP, pingPort);
+                if (!discoveredPeers.containsKey(pingIP)) {
+                    discoveredPeers.put(pingIP, pingPort);
 
                     try {
                         sendPong(pingIP, pingPort);
                     } catch (IOException e) {
                         Log.e(Messages.ERR_UDP_PKTSEND, e);
                     }
-                    // TODO propagate ping
+                    propagatePing(pktData, pingIP);
                 }
                 break;
             case "PO": // This packet is a pong
                 Log.i(Messages.PONG_RECV + Values.ipPortStr(msgParts[1], Integer.parseInt(msgParts[2])));
-                pongs.add(pktMessage);
+                synchronized (recvdPongs) {
+                    recvdPongs.add(pktMessage);
+                    recvdPongs.notify();
+                }
         }
     }
 
@@ -108,7 +155,7 @@ public class DiscoveryClient {
      * @param pingIP Ping's sender's IP address
      */
     private void propagatePing(byte[] pingMsgData, String pingIP) {
-        for (Map.Entry<String, Integer> peer : discoveryPeers.entrySet()) {
+        for (Map.Entry<String, Integer> peer : discoveredPeers.entrySet()) {
             String peerIP = peer.getKey();
             int peerPort = peer.getValue();
 
@@ -150,12 +197,22 @@ public class DiscoveryClient {
         Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
 
         // Construct pong, attaching this host's IP address and port
-        String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.welcomePort;
+        String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.udpPort + "\004";
         byte[] pongMsgData = pongMsgBuilder.getBytes();
         InetAddress destAddr = InetAddress.getByName(pingIP);
         DatagramPacket pongPkt = new DatagramPacket(pongMsgData, pongMsgData.length, destAddr, pingPort);
 
         // Send pong!
         udpSocket.send(pongPkt);
+    }
+
+    /**
+     * Teardown this client.
+     * Interrupts all threads and closes all sockets.
+     */
+    void teardown() {
+        listenerRunning = false;
+        listener.interrupt();
+        udpSocket.close();
     }
 }

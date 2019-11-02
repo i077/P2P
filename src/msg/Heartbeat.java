@@ -2,6 +2,8 @@ package msg;
 
 /**
  * Instances of this data class represent heartbeats sent between peers to keep their connections alive.
+ * Even though a Heartbeat doesn't really need an ID or most of the properties the PeerMessage abstract class offers,
+ * this class still extends PeerMessage for socket functionality.
  */
 public class Heartbeat extends PeerMessage {
     @Override

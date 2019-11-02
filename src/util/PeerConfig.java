@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Data class used to store peer configuration.
@@ -25,7 +26,7 @@ public class PeerConfig {
     public final int udpServerPort, udpClientPort,
         welcomePort;
     public final ArrayList<Integer> availTCPPorts;
-    public final ArrayList<File> sharedFileList;
+    public final List<File> sharedFileList;
 
     /**
      * Read the peer configuration files into the object.

@@ -64,17 +64,21 @@ public class p2p {
             }
 
             // Ignore empty input and prompt again
-            if (input.isEmpty()) {
-                System.out.println();
+            if (input.isEmpty())
                 continue;
-            }
 
             // Parse input
             String[] argv = input.split(" ");
             switch (argv[0]) {
                 case "connect":
                 case "Connect":
-                    // TODO run the discovery protocol
+                    if (argv.length != 3) {
+                        System.err.println(Messages.CONNECT_USAGE);
+                        continue;
+                    }
+                    String ip = argv[1];
+                    int port = Integer.parseInt(argv[2]);
+                    peer.connect(ip, port);
                     break;
                 case "get":
                 case "Get":
@@ -94,5 +98,8 @@ public class p2p {
 
             System.out.flush();
         }
+
+        // At this point, the peer should no longer be running, so tear it down.
+        peer.teardown();
     }
 }

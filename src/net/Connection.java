@@ -5,11 +5,14 @@ import msg.PeerMessage;
 import msg.Query;
 import util.Log;
 import util.Messages;
+import util.PeerConfig;
 import util.Values;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,16 +23,19 @@ import java.util.TimerTask;
  * Each peer in a connection has this object so its Peer instance can manage their respective sides.
  */
 public class Connection {
-    private InetAddress neighborAddr;
+    InetAddress neighborAddr;
     private Socket connectionSocket;
 
     private Map<Integer, Query> queries;
     private final Map<String, Connection> connections;
 
+    private final List<File> sharedFileList;
+
     // Use different timers to make sure one task doesn't block the other
     private Timer heartbeat, reader;
 
-    private long lastHeartbeatTime;
+    // Different threads access this, so make it volatile
+    private volatile long lastHeartbeatTime;
 
     /**
      * Thread that listens on socket and sends heartbeat via two Timers.
@@ -38,11 +44,13 @@ public class Connection {
 
     public Connection(InetAddress ip, int port,
                       Map<Integer, Query> queries,
-                      Map<String, Connection> connections) throws IOException {
+                      Map<String, Connection> connections,
+                      PeerConfig config) throws IOException {
         this.neighborAddr = ip;
         this.connectionSocket = new Socket(ip, port);
         this.queries = queries;
         this.connections = connections;
+        this.sharedFileList = config.sharedFileList;
 
         heartbeat = new Timer();
         reader = new Timer();
@@ -92,6 +100,8 @@ public class Connection {
                 }, 0, Values.READER_INTERVAL);
             }
         });
+        // This listener should not keep the peer alive.
+        listener.setDaemon(true);
     }
 
     /**
@@ -144,5 +154,20 @@ public class Connection {
      */
     private void processPacket(byte[] pktData, int pktLen) {
         String message = new String(pktData, 0, pktLen).trim(); // Exclude end-of-transmission character
+
+        switch (message.charAt(0)) {
+            case 'H': // Packet is a heartbeat
+                Log.i(Messages.HBEAT_RECV(neighborAddr.getHostAddress()));
+                lastHeartbeatTime = System.currentTimeMillis();
+                break;
+            case 'Q':
+                // TODO Check query
+                break;
+            case 'R':
+                // TODO Check response
+                break;
+            default:
+                Log.e(Messages.CONN_PKTWEIRD);
+        }
     }
 }
