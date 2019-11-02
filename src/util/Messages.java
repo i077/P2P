@@ -38,4 +38,6 @@ public class Messages {
     public static String ERR_CONNREAD(String ip) {
         return "There was a problem reading data from the connection with " + ip + ".";
     }
+
+    public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";
 }

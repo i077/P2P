@@ -68,7 +68,7 @@ public class Connection {
                             }
                         } else {
                             Log.i(Messages.HBEAT_TOUT(neighborAddr.getHostAddress()));
-                            // TODO close connection
+                            teardown();
                         }
                     }
                 }, 0, Values.HEARTBEAT_INTERVAL);
@@ -83,10 +83,11 @@ public class Connection {
                             try {
                                 recvLen = connectionSocket.getInputStream().read(recvBuf);
                             } catch (IOException e) {
-                                Log.e(Messages.ERR_CONNREAD(neighborAddr.getHostAddress()));
+                                Log.e(Messages.ERR_CONNREAD(neighborAddr.getHostAddress()), e);
                             }
                         } while (isAlive() && recvLen < 0);
-                        processPacket(recvBuf);
+
+                        processPacket(recvBuf, recvLen);
                     }
                 }, 0, Values.READER_INTERVAL);
             }
@@ -108,8 +109,26 @@ public class Connection {
      * @param msg The PeerMessage to send to the other peer.
      * @throws IOException if the socket had a problem sending the message.
      */
-    void sendPeerMessage(PeerMessage msg) throws IOException {
+    private void sendPeerMessage(PeerMessage msg) throws IOException {
         connectionSocket.getOutputStream().write(msg.toString().getBytes());
+    }
+
+    /**
+     * Teardown this connection.
+     * Closes all sockets, cancels all timers, and stops all threads.
+     *
+     * This should be called if the connection becomes stale (i.e. no heartbeat was received within the timeout interval),
+     * or if the client is exiting.
+     */
+    void teardown() {
+        heartbeat.cancel();
+        reader.cancel();
+
+        try {
+            connectionSocket.close();
+        } catch (IOException e) {
+            Log.e(Messages.ERR_SOCKCLOSE, e);
+        }
     }
 
     /**
@@ -123,7 +142,7 @@ public class Connection {
      *
      * @param pktData Byte array of the incoming packet that was sent over the socket.
      */
-    private void processPacket(byte[] pktData) {
-
+    private void processPacket(byte[] pktData, int pktLen) {
+        String message = new String(pktData, 0, pktLen).trim(); // Exclude end-of-transmission character
     }
 }

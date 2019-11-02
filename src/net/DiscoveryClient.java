@@ -76,7 +76,7 @@ public class DiscoveryClient {
         byte[] pktData = packet.getData();
         String pktMessage = new String(pktData);
 
-        String[] msgParts = pktMessage.split(":");
+        String[] msgParts = pktMessage.trim().split(":");
         switch(msgParts[0]) {
             case "PI": // This packet is a ping
                 String pingIP = msgParts[1];

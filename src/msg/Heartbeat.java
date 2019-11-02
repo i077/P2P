@@ -16,6 +16,6 @@ public class Heartbeat extends PeerMessage {
 
     @Override
     public String toString() {
-        return "H";
+        return "H\004";
     }
 }

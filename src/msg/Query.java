@@ -54,6 +54,6 @@ public class Query extends PeerMessage {
 
     @Override
     public String toString() {
-        return "Q:" + id + ";"  + filename;
+        return "Q:" + id + ";"  + filename + "\004";
     }
 }
