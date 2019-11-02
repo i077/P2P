@@ -3,6 +3,7 @@ package net;
 import msg.Heartbeat;
 import msg.PeerMessage;
 import msg.Query;
+import msg.Response;
 import util.Log;
 import util.Messages;
 import util.PeerConfig;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.*;
 
 /**
@@ -163,7 +165,7 @@ public class Connection {
                 Log.i(Messages.HBEAT_RECV(neighborAddr.getHostAddress()));
                 lastHeartbeatTime = System.currentTimeMillis();
                 break;
-            case 'Q':
+            case 'Q': // Packet is a query
                 // Reconstruct and process query
                 String[] queryParts = message.substring(2) // Exclude "Q:"
                         .split(";");
@@ -171,8 +173,23 @@ public class Connection {
                 query.originAddr = connectionSocket.getInetAddress();
                 processQuery(query);
                 break;
-            case 'R':
-                // TODO Check response
+            case 'R': // Packet is a response
+                // Reconstruct and process response
+                String[] responseParts = message.substring(2)
+                        .split(";");
+                String[] addressParts = responseParts[1].split(":");
+                try {
+                    Response response = new Response(
+                        Integer.parseInt(responseParts[0]),
+                        InetAddress.getByName(addressParts[0]),
+                        Integer.parseInt(addressParts[1]),
+                        responseParts[2]
+                    );
+                    processResponse(response);
+                } catch (UnknownHostException e) {
+                    Log.e(Messages.ERR_RESPUNK, e);
+                }
+
                 break;
             default:
                 Log.e(Messages.CONN_PKTWEIRD);
@@ -185,10 +202,16 @@ public class Connection {
      * If this peer has the file requested in the query, then we immediately send a response and (implicitly) discard the query.
      * Otherwise, we save the query in the queries map and forward the query to every other connection.
      *
+     * To avoid infinitely forwarding queries for files that no peers have, we do nothing if we have seen this query before.
+     *
      * @param query The incoming query.
      */
     private void processQuery(Query query) {
         Log.i(Messages.QUERY_RECV(query));
+
+        // Do nothing if we've seen this query before to avoid infinite forwards.
+        if (queries.containsKey(query.getId()))
+            return;
 
         boolean hasFile = false;
         // Check if this peer has the requested file
@@ -200,7 +223,15 @@ public class Connection {
 
         if (hasFile) {
             Log.i(Messages.QUERY_HASFILE(query));
-            // TODO Send response
+            Response newResponse = new Response(query);
+
+            Log.i(Messages.RESP_SEND(newResponse, connectionSocket.getInetAddress().getHostAddress()));
+            try {
+                sendPeerMessage(newResponse);
+            } catch (IOException e) {
+                if (this.isAlive()) // This connection may be dead, so only log an error if it is alive
+                    Log.e(Messages.ERR_RESPSEND(this.neighborAddr.getHostAddress()), e);
+            }
         } else {
             // This peer doesn't have the file, so we can't immediately send a response.
             Log.i(Messages.QUERY_NOHASFILE(query));
@@ -220,6 +251,42 @@ public class Connection {
                     if (c.isAlive()) // This connection may be dead, so only log an error if it is alive
                         Log.e(Messages.ERR_QUERYFWD(c.neighborAddr.getHostAddress()), e);
                 }
+            }
+        }
+    }
+
+    /**
+     * Process an incoming response packet. Called by processPacket().
+     *
+     * If this host sent this response, then we should immediately begin a transfer.
+     * Otherwise, if we have the corresponding query in the queries map,
+     * forward the response up to the original sender of that query.
+     *
+     * @param response The incoming response.
+     */
+    private void processResponse(Response response) {
+        // If we don't have the corresponding query, log an error and discard
+        if (!queries.containsKey(response.getId())) {
+            Log.e(Messages.ERR_RESPUNK);
+            return;
+        }
+
+        // At this point, we have the query, so pull it from the map
+        Query coQuery = queries.remove(response.getId());
+
+        // Since Peer.requestFile() doesn't give the query an origin, we can assume that
+        // if coQuery.originAddr == null, this query came from this host.
+        if (coQuery.originAddr == null) {
+            Log.i(Messages.REQ_TFER(response));
+            // TODO Initiate transfer
+        } else {
+            // Forward the response through the appropriate connection
+            Connection originConn = connections.get(coQuery.originAddr);
+            try {
+                originConn.sendPeerMessage(response);
+            } catch (IOException e) {
+                if (originConn.isAlive()) // Connection may be dead
+                    Log.e(Messages.ERR_RESPFWD(originConn.neighborAddr.getHostAddress()));
             }
         }
     }

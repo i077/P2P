@@ -1,6 +1,7 @@
 package util;
 
 import msg.Query;
+import msg.Response;
 
 /**
  * Class used to provide messages.
@@ -10,6 +11,10 @@ public class Messages {
     public static String WELCOME_MSG = "Starting P2P node...";
     public static String WELCOME_IP() { return "Your current IP address is: " + Values.ownIPAddr().getHostAddress(); }
     public static String SHELL_READY = "Ready. Type a command.";
+
+    public static String TRDN_CONNCLOSING = "Closing all neighboring connections...";
+    public static String TRDN_NOCONNS = "No connections to close.";
+    public static String TRDN_CONNCLOSED = "Successfully closed all neighboring connections and left the P2P network.";
 
     public static String PING_SEND = "Sending ping to ";
     public static String PING_RECV = "Received ping from ";
@@ -34,10 +39,6 @@ public class Messages {
         return "Heartbeat received from " + ip + ".";
     }
 
-    public static String TRDN_CONNCLOSING = "Closing all neighboring connections.";
-    public static String TRDN_NOCONNS = "No connections to close.";
-    public static String TRDN_CONNCLOSED = "Successfully closed all neighboring connections and left the P2P network.";
-
     public static String QUERY_SEND(Query q, String ip) {
         return "Sending query for \"" + q.getFilename() + "\" to " + ip + ".";
     }
@@ -52,6 +53,14 @@ public class Messages {
     }
     public static String QUERY_FWD(Query q, String ip) {
         return "Forwarding query for \"" + q.getFilename() + "\" to " + ip + ".";
+    }
+
+    public static String RESP_SEND(Response r, String ip) {
+        return "Sending response for \"" + r.getFilename() + " to " + ip + ".";
+    }
+
+    public static String REQ_TFER(Response r) {
+        return "Requesting a transfer of file \"" + r.getFilename() + "\" from " + r.getOrigin().getHostAddress() + ".";
     }
 
     // Error messages
@@ -83,6 +92,14 @@ public class Messages {
     }
     public static String ERR_QUERYFWD(String ip) {
         return "There was a problem forwarding a query to " + ip + ".";
+    }
+
+    public static String ERR_RESPSEND(String ip) {
+        return "There was a problem sending a new response to " + ip + ".";
+    }
+    public static String ERR_RESPUNK = "Received an unknown response.";
+    public static String ERR_RESPFWD(String ip) {
+        return "There was a problem forwarding a reponse to " + ip + ".";
     }
 
     public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";
