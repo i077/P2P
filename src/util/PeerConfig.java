@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Data class used to store peer configuration.
+ * Singleton data class used to store peer configuration.
  * This includes the ports it will use (and for what purpose),
  * as well as files it can share.
  *
@@ -23,9 +23,23 @@ import java.util.List;
  *  Each line is a path, implied to start from "~/p2p/shared/", to a file (that must exist) in ~/p2p/shared/
  */
 public class PeerConfig {
-    public final int udpClientPort, welcomePort;
+    private static PeerConfig instance;
+
+    static {
+        try {
+            instance = new PeerConfig();
+        } catch (IOException e) {
+            Log.fatal(Messages.ERR_PEERCONFIG, e, -1);
+        }
+    }
+
+    public final int udpClientPort, welcomePort, transferPort;
     public final ArrayList<Integer> availTCPPorts;
     public final List<File> sharedFileList;
+
+    public static PeerConfig get() {
+        return instance;
+    }
 
     /**
      * Read the peer configuration files into the object.
@@ -41,8 +55,10 @@ public class PeerConfig {
             // Read in UDP ports
             String udpClientPortText = br.readLine();
             String welcomePortText = br.readLine();
+            String transferPortText = br.readLine();
             udpClientPort = Integer.parseInt(udpClientPortText);
             welcomePort = Integer.parseInt(welcomePortText);
+            transferPort = Integer.parseInt(transferPortText);
 
             // Read in TCP ports
             availTCPPorts = new ArrayList<>();
@@ -60,7 +76,7 @@ public class PeerConfig {
                 File file = new File("~/p2p/sharing/" + path);
                 // Check that this file exists and is a file
                 if (!file.exists() || !file.isFile()) {
-                    throw new FileNotFoundException("Could not read ~/p2p/sharing" + path + ". Check that this file exists.");
+                    throw new FileNotFoundException("Could not read ~/p2p/sharing/" + path + ". Check that this file exists.");
                 }
                 sharedFileList.add(file);
             }

@@ -32,9 +32,9 @@ public class DiscoveryClient {
      */
     public Thread listener;
 
-    DiscoveryClient(PeerConfig config) throws SocketException {
-        this.udpPort = config.udpClientPort;
-        this.welcomePort = config.welcomePort;
+    DiscoveryClient() throws SocketException {
+        this.udpPort = PeerConfig.get().udpClientPort;
+        this.welcomePort = PeerConfig.get().welcomePort;
         this.udpSocket = new DatagramSocket(this.udpPort);
 
         discoveredPeers = new HashMap<>();

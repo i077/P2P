@@ -29,14 +29,10 @@ public class Peer {
     private DiscoveryClient discoveryClient;
 
     private Map<Integer, Query> queries;
-    // TODO Should this be a Set?
     private Map<InetAddress, Connection> connections; // Maps IP address to connection
 
-    private final PeerConfig peerConfig;
-
-    public Peer(final PeerConfig config) throws IOException {
-        this.peerConfig = config;
-        welcomeSocket = new ServerSocket(config.welcomePort);
+    public Peer() throws IOException {
+        welcomeSocket = new ServerSocket(PeerConfig.get().welcomePort);
 
         welcomeSocketListener = new Thread(new Runnable() {
             @Override
@@ -46,7 +42,7 @@ public class Peer {
                     try {
                         // Block for incoming connections
                         Socket newSocket = welcomeSocket.accept();
-                        Connection newConnection = new Connection(newSocket, queries, connections, config);
+                        Connection newConnection = new Connection(newSocket, queries, connections);
                         Log.i(Messages.CONN_ACPT(newSocket.getInetAddress().getHostAddress()));
 
                         putConnection(newConnection);
@@ -59,7 +55,7 @@ public class Peer {
         welcomeSocketListener.setDaemon(true);
         welcomeSocketListener.start();
 
-        discoveryClient = new DiscoveryClient(config);
+        discoveryClient = new DiscoveryClient();
         discoveryClient.listener.start();
 
         // Queries and connections are accessed by different threads, so make them thread-safe
@@ -105,7 +101,7 @@ public class Peer {
         InetAddress peerAddr = InetAddress.getByName(ip);
         Socket newSocket = new Socket(peerAddr, port);
 
-        Connection newConn = new Connection(newSocket, queries, connections, peerConfig);
+        Connection newConn = new Connection(newSocket, queries, connections);
         putConnection(newConn);
     }
 

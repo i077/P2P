@@ -21,19 +21,13 @@ public class p2p {
         System.out.println(Messages.WELCOME_MSG);
         System.out.println(Messages.WELCOME_IP());
 
-        // Read config
-        PeerConfig config = null;
-        try {
-            config = new PeerConfig();
-        } catch (IOException e) {
-            Log.fatal(Messages.ERR_PEERCONFIG, e, -1);
-        }
-        assert config != null;
+        // Make sure config is read into singleton class before starting peer.
+        assert PeerConfig.get() != null;
 
         // Start the shell
         Peer peer = null;
         try {
-            peer = new Peer(config);
+            peer = new Peer();
         } catch (IOException e) {
             Log.fatal("", e, 1);
         }

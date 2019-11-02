@@ -41,13 +41,12 @@ public class Connection {
 
     public Connection(Socket socket,
                       Map<Integer, Query> queries,
-                      final Map<InetAddress, Connection> connections,
-                      PeerConfig config) {
+                      final Map<InetAddress, Connection> connections) {
         this.neighborAddr = socket.getInetAddress();
         this.connectionSocket = socket;
         this.queries = queries;
         this.connections = connections;
-        this.sharedFileList = config.sharedFileList;
+        this.sharedFileList = PeerConfig.get().sharedFileList;
 
         heartbeat = new Timer();
         reader = new Timer();
