@@ -12,10 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
  * Represents a connection between two peers, used for exchanging queries/responses.
@@ -44,7 +41,7 @@ public class Connection {
 
     public Connection(Socket socket,
                       Map<Integer, Query> queries,
-                      Map<InetAddress, Connection> connections,
+                      final Map<InetAddress, Connection> connections,
                       PeerConfig config) {
         this.neighborAddr = socket.getInetAddress();
         this.connectionSocket = socket;
@@ -77,6 +74,7 @@ public class Connection {
                             }
                         } else {
                             Log.i(Messages.HBEAT_TOUT(neighborAddr.getHostAddress()));
+                            connections.remove(Connection.this.neighborAddr);
                             Connection.this.teardown();
                         }
                     }
@@ -123,7 +121,7 @@ public class Connection {
      * @param msg The PeerMessage to send to the other peer.
      * @throws IOException if the socket had a problem sending the message.
      */
-    private void sendPeerMessage(PeerMessage msg) throws IOException {
+    void sendPeerMessage(PeerMessage msg) throws IOException {
         connectionSocket.getOutputStream().write(msg.toString().getBytes());
     }
 
@@ -147,6 +145,8 @@ public class Connection {
 
     /**
      * Process an incoming packet on the socket.
+     * If this packet isn't a heartbeat (which just requires logging and updating one field),
+     * control is passed to another function that handles that respective type of message.
      *
      * Either this packet is:
      *
@@ -165,7 +165,12 @@ public class Connection {
                 lastHeartbeatTime = System.currentTimeMillis();
                 break;
             case 'Q':
-                // TODO Check query
+                // Reconstruct and process query
+                String[] queryParts = message.substring(2) // Exclude "Q:"
+                        .split(";");
+                Query query = new Query(Integer.parseInt(queryParts[0]), queryParts[1]);
+                query.originAddr = connectionSocket.getInetAddress();
+                processQuery(query);
                 break;
             case 'R':
                 // TODO Check response
@@ -173,5 +178,67 @@ public class Connection {
             default:
                 Log.e(Messages.CONN_PKTWEIRD);
         }
+    }
+
+    /**
+     * Process an incoming query. Called by processPacket().
+     *
+     * If this peer has the file requested in the query, then we immediately send a response and (implicitly) discard the query.
+     * Otherwise, we save the query in the queries map and forward the query to every other connection.
+     *
+     * @param query The incoming query.
+     */
+    private void processQuery(Query query) {
+        Log.i(Messages.QUERY_RECV(query));
+
+        boolean hasFile = false;
+        // Check if this peer has the requested file
+        for (File f : sharedFileList) {
+            if (query.getFilename().equals(f.getName())) {
+                hasFile = true;
+            }
+        }
+
+        if (hasFile) {
+            Log.i(Messages.QUERY_HASFILE(query));
+            // TODO Send response
+        } else {
+            // This peer doesn't have the file, so we can't immediately send a response.
+            Log.i(Messages.QUERY_NOHASFILE(query));
+
+            // Instead, save this query for later and propagate it to other connections.
+            queries.put(query.getId(), query);
+
+            for (Connection c : connections.values()) {
+                // We don't want to forward the query to this connection
+                if (c == this || c.equals(this))
+                    continue;
+
+                try {
+                    Log.i(Messages.QUERY_FWD(query, c.neighborAddr.getHostAddress()));
+                    c.sendPeerMessage(query);
+                } catch (IOException e) {
+                    if (c.isAlive()) // This connection may be dead, so only log an error if it is alive
+                        Log.e(Messages.ERR_QUERYFWD(c.neighborAddr.getHostAddress()), e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(connectionSocket.getInetAddress().getHostAddress());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || this.getClass() != obj.getClass())
+            return false;
+        Connection that = (Connection) obj;
+        // Treat connections with the same peer as the same
+        return this.connectionSocket.getInetAddress().getHostAddress()
+                .equals(that.connectionSocket.getInetAddress().getHostAddress());
     }
 }

@@ -142,7 +142,7 @@ public class DiscoveryClient {
             case "PI": // This packet is a ping
                 String pingIP = msgParts[1];
                 int pingPort = Integer.parseInt(msgParts[2]);
-                Log.i(Messages.PING_RECV + Values.ipPortStr(pingIP, pingPort));
+//                Log.i(Messages.PING_RECV + Values.ipPortStr(pingIP, pingPort));
 
                 // Send a response pong
                 try {
@@ -159,7 +159,7 @@ public class DiscoveryClient {
                 }
                 break;
             case "PO": // This packet is a pong
-                Log.i(Messages.PONG_RECV + Values.ipPortStr(msgParts[1], Integer.parseInt(msgParts[2])));
+//                Log.i(Messages.PONG_RECV + Values.ipPortStr(msgParts[1], Integer.parseInt(msgParts[2])));
                 synchronized (recvdPongs) {
                     recvdPongs.add(pktMessage);
                     recvdPongs.notify();
@@ -197,7 +197,7 @@ public class DiscoveryClient {
      * @param destPort Port number of destination
      */
     private void sendPing(byte[] pingMsgData, String destIP, int destPort) throws IOException {
-        Log.i(Messages.PING_SEND + Values.ipPortStr(destIP, destPort));
+//        Log.i(Messages.PING_SEND + Values.ipPortStr(destIP, destPort));
 
         InetAddress destAddr = InetAddress.getByName(destIP);
         DatagramPacket pingPkt = new DatagramPacket(pingMsgData, pingMsgData.length, destAddr, destPort);
@@ -213,7 +213,7 @@ public class DiscoveryClient {
      * @param pingPort The ping's sender's port number
      */
     private void sendPong(String pingIP, int pingPort) throws IOException {
-        Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
+//        Log.i(Messages.PONG_SEND + Values.ipPortStr(pingIP, pingPort));
 
         // Construct pong, attaching this host's IP address and port
         String pongMsgBuilder = "PO:" + Values.ownIPAddr() + ":" + this.welcomePort + "\004";

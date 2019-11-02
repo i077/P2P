@@ -1,5 +1,7 @@
 package util;
 
+import msg.Query;
+
 /**
  * Class used to provide messages.
  */
@@ -26,19 +28,36 @@ public class Messages {
 
     public static String HBEAT_SEND = "Sending heartbeat to ";
     public static String HBEAT_TOUT(String ip) {
-        return "No heartbeat received from " + ip + " in a while. Closing connection.";
+        return "No heartbeat received from " + ip + " in " + Values.HEARTBEAT_INTERVAL / 1000 + "s. Closing connection.";
     }
     public static String HBEAT_RECV(String ip) {
-        return "Heartbeat recevied from " + ip + ".";
+        return "Heartbeat received from " + ip + ".";
     }
 
     public static String TRDN_CONNCLOSING = "Closing all neighboring connections.";
     public static String TRDN_NOCONNS = "No connections to close.";
     public static String TRDN_CONNCLOSED = "Successfully closed all neighboring connections and left the P2P network.";
 
+    public static String QUERY_SEND(Query q, String ip) {
+        return "Sending query for \"" + q.getFilename() + "\" to " + ip + ".";
+    }
+    public static String QUERY_RECV(Query q) {
+        return "Received query from " + q.originAddr.getHostAddress() + " for file \"" + q.getFilename() + "\".";
+    }
+    public static String QUERY_HASFILE(Query q) {
+        return "Found matching file \"" + q.getFilename() + "\" for query from " + q.originAddr + ".";
+    }
+    public static String QUERY_NOHASFILE(Query q) {
+        return "Did not find matching file \"" + q.getFilename() + "\" for query from " + q.originAddr + ".";
+    }
+    public static String QUERY_FWD(Query q, String ip) {
+        return "Forwarding query for \"" + q.getFilename() + "\" to " + ip + ".";
+    }
+
     // Error messages
     public static String SHELL_CNF = " is not a valid command.";
     public static String CONNECT_USAGE = "Usage: connect <IP> <port>";
+    public static String GET_USAGE = "Usage: get <file>";
 
     public static String ERR_PEERCONFIG = "There was a problem reading the peer configuration.";
     public static String ERR_CHECKIP = "Using external checkip service failed, trying InetAddress.";
@@ -57,6 +76,13 @@ public class Messages {
 
     public static String ERR_CONNREAD(String ip) {
         return "There was a problem reading data from the connection with " + ip + ".";
+    }
+
+    public static String ERR_QUERYSEND(String ip) {
+        return "There was a problem sending a new query to " + ip + ".";
+    }
+    public static String ERR_QUERYFWD(String ip) {
+        return "There was a problem forwarding a query to " + ip + ".";
     }
 
     public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";

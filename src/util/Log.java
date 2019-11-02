@@ -14,7 +14,9 @@ public class Log {
      */
     public static void i(String msg) {
         System.out.println("\033[2K\r" + msg);
+        System.out.flush();
         System.out.print(PROMPT);
+        System.out.flush();
     }
 
     /**
@@ -39,6 +41,7 @@ public class Log {
             e.printStackTrace();
         System.err.flush();
         System.out.print(PROMPT);
+        System.out.flush();
     }
 
     /**

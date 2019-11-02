@@ -76,13 +76,32 @@ public class Peer {
     }
 
     /**
+     * Send a query for a file, specified by name, over all connections.
+     *
+     * @param filename The name of the file to request.
+     */
+    public void requestFile(String filename) {
+        Query newQuery = new Query(filename);
+        for (Connection c : connections.values()) {
+            Log.i(Messages.QUERY_SEND(newQuery, c.neighborAddr.getHostAddress()));
+            try {
+                c.sendPeerMessage(newQuery);
+            } catch (IOException e) {
+                // Don't want to stop sending to all connections just because one failed
+                if (c.isAlive())
+                    Log.e(Messages.ERR_QUERYSEND(c.neighborAddr.getHostAddress()));
+            }
+        }
+    }
+
+    /**
      * Add a new neighboring connection with a host of the specified IP address and port.
      * This method is used by the DiscoveryClient when it receives a pong from a connect command.
      *
      * @param ip The IP address of the new peer
      * @param port The port of the new peer
      */
-    public void addNeighbor(String ip, int port) throws IOException {
+    void addNeighbor(String ip, int port) throws IOException {
         InetAddress peerAddr = InetAddress.getByName(ip);
         Socket newSocket = new Socket(peerAddr, port);
 
@@ -96,7 +115,7 @@ public class Peer {
      *
      * @param conn The connection to put
      */
-    public void putConnection(Connection conn) {
+    private void putConnection(Connection conn) {
         Connection lastConn = connections.get(conn.neighborAddr);
 
         if (lastConn != null && lastConn.isAlive()) {
@@ -124,8 +143,8 @@ public class Peer {
         Log.i(Messages.TRDN_CONNCLOSING);
         for (Connection c : connections.values()) {
             c.teardown();
-            connections.remove(c.neighborAddr);
         }
+        connections.clear();
         Log.i(Messages.TRDN_CONNCLOSED);
     }
 

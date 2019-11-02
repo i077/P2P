@@ -81,7 +81,11 @@ public class p2p {
                     break;
                 case "get":
                 case "Get":
-                    // TODO send a query for a file
+                    if (argv.length != 2) {
+                        System.err.println(Messages.GET_USAGE);
+                        continue;
+                    }
+                    peer.requestFile(argv[1]);
                     break;
                 case "leave":
                 case "Leave":
