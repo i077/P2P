@@ -266,7 +266,15 @@ public class Connection extends AbstractConnection {
         // if coQuery.originAddr == null, this query came from this host.
         if (coQuery.originAddr == null) {
             Log.i(Messages.REQ_TFER(response));
-            // TODO Initiate transfer
+            // Initiate transfer request
+            ReceiveConnection recvConn = null;
+            try {
+                recvConn = new ReceiveConnection(response);
+            } catch (IOException e) {
+                Log.e(Messages.ERR_SOCKOPEN, e);
+            }
+            recvConn.requester.start();
+            recvConn.receiver.start();
         } else {
             // Forward the response through the appropriate connection
             Connection originConn = connections.get(coQuery.originAddr);

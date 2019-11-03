@@ -5,11 +5,10 @@ import util.Messages;
 import util.PeerConfig;
 import util.Values;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -19,7 +18,7 @@ import java.util.TimerTask;
  * This class is used by the peer sending the file, whereas the peer receiving the file will use a ReceiveConnection.
  */
 public class TransferConnection extends AbstractConnection {
-    private Thread listener;
+    public Thread listener;
     private Timer reader;
 
     TransferConnection(final Socket socket) {
@@ -63,6 +62,9 @@ public class TransferConnection extends AbstractConnection {
      * @param pktLen Length of the incoming packet
      */
     protected void processPacket(byte[] pktData, int pktLen) {
+        // Don't do anything if packet is empty.
+        if (pktLen <= 0) return;
+
         String message = new String(pktData, 0, pktLen).trim(); // Exclude end-of-transmission character
 
         // We're only looking for one type of message here
@@ -94,17 +96,17 @@ public class TransferConnection extends AbstractConnection {
 
         // At this point, we have found the file.
         // We need to break it up in chunks to send via packets, so we use a FileReader to read the file chunks at a time.
-        FileReader fileReader = null;
+        Reader fileReader = null;
         try {
-            fileReader = new FileReader(requestedFile);
+            fileReader = new BufferedReader(new FileReader(requestedFile));
         } catch (FileNotFoundException ignored) {} // We can safely assume that the peer has the file, since PeerConfig checks this.
         assert fileReader != null;
 
         // Send the file!
         char[] fileChunk = new char[2048];
         try {
-            while (fileReader.read(fileChunk) > 0) {
-                byte[] pktData = new String(fileChunk).getBytes();
+            while (fileReader.read(fileChunk) != -1) {
+                byte[] pktData = new String(fileChunk).getBytes(StandardCharsets.UTF_8);
                 socket.getOutputStream().write(pktData);
             }
         } catch (IOException e) {
@@ -112,6 +114,18 @@ public class TransferConnection extends AbstractConnection {
                 Log.e(Messages.ERR_TFER_SEND, e);
         }
 
+        try {
+            fileReader.close();
+        } catch (IOException e) {
+            Log.e(Messages.ERR_FILEREAD, e);
+        }
         Log.i(Messages.TFER_FINISHED(filename, socket.getInetAddress().getHostAddress()));
+    }
+
+    @Override
+    void teardown() {
+        listener.interrupt();
+        reader.cancel();
+        super.teardown();
     }
 }

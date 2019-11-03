@@ -24,10 +24,10 @@ public abstract class AbstractConnection {
 
     /**
      * Teardown this connection.
-     * Closes all sockets, cancels all timers, and stops all threads.
      *
      * This should be called if the connection becomes stale (i.e. no heartbeat was received within the timeout interval),
      * or if the client is exiting.
+     * Subclasses should cancel timers and interrupt threads when overriding this method.
      */
     void teardown() {
         try {

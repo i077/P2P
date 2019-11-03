@@ -21,10 +21,10 @@ public class Peer {
     private ServerSocket welcomeSocket, transferSocket;
 
     /**
-     * Thread to listen for any incoming connections
+     * Threads to listen for any incoming connections
      */
     public Thread welcomeSocketListener, transferSocketListener;
-    private boolean welcomeListenerRunning;
+    private boolean welcomeListenerRunning, transferListenerRunning;
 
     private DiscoveryClient discoveryClient;
 
@@ -56,12 +56,37 @@ public class Peer {
         welcomeSocketListener.setDaemon(true);
         welcomeSocketListener.start();
 
+        transferSocket = new ServerSocket(PeerConfig.get().transferPort);
+
+        transferSocketListener = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                transferListenerRunning = true;
+                while (transferListenerRunning) {
+                    try {
+                        // Block for incoming connections
+                        Socket newSocket = transferSocket.accept();
+                        TransferConnection newTferConnection = new TransferConnection(newSocket);
+                        Log.i(Messages.TFER_ACPT(newSocket.getInetAddress().getHostAddress()));
+
+                        newTferConnection.listener.start();
+                        Peer.this.transferConnections.put(newSocket.getInetAddress(), newTferConnection);
+                    } catch (IOException e) {
+                        Log.e(Messages.ERR_TFERACCEPT, e);
+                    }
+                }
+            }
+        });
+        transferSocketListener.setDaemon(true);
+        transferSocketListener.start();
+
         discoveryClient = new DiscoveryClient();
         discoveryClient.listener.start();
 
         // Queries and connections are accessed by different threads, so make them thread-safe
         queries = Collections.synchronizedMap(new HashMap<Integer, Query>());
         connections = Collections.synchronizedMap(new HashMap<InetAddress, Connection>());
+        transferConnections = new HashMap<>();
     }
 
     public void connect(String ip, int port) {
@@ -156,8 +181,17 @@ public class Peer {
     public void teardown() {
         discoveryClient.teardown();
         closeAllConnections();
+
+        for (TransferConnection tc : transferConnections.values()) {
+            tc.teardown();
+        }
+        transferConnections.clear();
+
         // Stop accepting new connections
         welcomeListenerRunning = false;
         welcomeSocketListener.interrupt();
+
+        transferListenerRunning = false;
+        transferSocketListener.interrupt();
     }
 }

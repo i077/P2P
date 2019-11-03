@@ -56,14 +56,17 @@ public class Messages {
     }
 
     public static String RESP_SEND(Response r, String ip) {
-        return "Sending response for \"" + r.getFilename() + " to " + ip + ".";
+        return "Sending response for \"" + r.getFilename() + "\" to " + ip + ".";
     }
 
+    public static String TFER_ACPT(String ip) {
+        return "Accepting new transfer request from " + ip + ".";
+    }
     public static String REQ_TFER(Response r) {
         return "Requesting a transfer of file \"" + r.getFilename() + "\" from " + r.getOrigin().getHostAddress() + ".";
     }
     public static String TFER_REQRECV(String filename, String ip) {
-        return "Received a request from " + ip + "to transfer file \"" + filename + "\".";
+        return "Received a request from " + ip + " to transfer file \"" + filename + "\".";
     }
     public static String TFER_FINISHED(String filename, String ip) {
         return "Sent file \"" + filename + "\" to " + ip + ".";
@@ -85,6 +88,7 @@ public class Messages {
     public static String ERR_NOPONGS = "No pongs received after " + Values.PONGWAIT_INTERVAL + "ms.";
 
     public static String ERR_WLCMACCEPT = "There was a problem accepting a new connection from the welcome socket.";
+    public static String ERR_TFERACCEPT = "There was a problem accepting a new connection from the transfer socket.";
     public static String ERR_HBEATSEND(String ip) {
         return "There was a problem sending a heartbeat to " + ip + ".";
     }
@@ -108,9 +112,14 @@ public class Messages {
         return "There was a problem forwarding a reponse to " + ip + ".";
     }
 
+    public static String ERR_SOCKOPEN = "There was a problem opening a socket.";
     public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";
 
     public static String CONN_PKTWEIRD = "Received an unrecognized packet.";
 
+    public static String ERR_TFER_REQSEND = "There was a problem requesting a transfer.";
     public static String ERR_TFER_SEND = "There was a problem sending a file.";
+
+    public static String ERR_FILEREAD = "There was a problem reading a file.";
+    public static String ERR_FILEWRITE = "There was a problem writing to a file.";
 }
