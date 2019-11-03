@@ -37,6 +37,14 @@ public abstract class AbstractConnection {
         }
     }
 
+    /**
+     * Process an incoming packet on the socket.
+     *
+     * @param pktData Byte array of the incoming packet that was sent over the socket.
+     * @param pktLen Length of the incoming packet
+     */
+    abstract protected void processPacket(byte[] pktData, int pktLen);
+
     @Override
     public int hashCode() {
         return Objects.hash(socket.getInetAddress().getHostAddress());

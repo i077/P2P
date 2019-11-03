@@ -18,18 +18,19 @@ import java.util.Map;
  * Holds state dealing with and manages the peer's connections, and handles/makes requests.
  */
 public class Peer {
-    private ServerSocket welcomeSocket;
+    private ServerSocket welcomeSocket, transferSocket;
 
     /**
      * Thread to listen for any incoming connections
      */
-    public Thread welcomeSocketListener;
+    public Thread welcomeSocketListener, transferSocketListener;
     private boolean welcomeListenerRunning;
 
     private DiscoveryClient discoveryClient;
 
     private Map<Integer, Query> queries;
     private Map<InetAddress, Connection> connections; // Maps IP address to connection
+    private Map<InetAddress, TransferConnection> transferConnections; // Maps IP address to transfer connection
 
     public Peer() throws IOException {
         welcomeSocket = new ServerSocket(PeerConfig.get().welcomePort);
@@ -77,7 +78,11 @@ public class Peer {
      * @param filename The name of the file to request.
      */
     public void requestFile(String filename) {
+        // Create and store query
         Query newQuery = new Query(filename);
+        queries.put(newQuery.getId(), newQuery);
+
+        // Send query thru each connection
         for (Connection c : connections.values()) {
             Log.i(Messages.QUERY_SEND(newQuery, c.neighborAddr.getHostAddress()));
             try {

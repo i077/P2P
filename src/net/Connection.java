@@ -143,8 +143,9 @@ public class Connection extends AbstractConnection {
      * - A response, in which case we should see if we sent the query, otherwise forward the response back up the query path.
      *
      * @param pktData Byte array of the incoming packet that was sent over the socket.
+     * @param pktLen Length of the incoming packet
      */
-    private void processPacket(byte[] pktData, int pktLen) {
+    protected void processPacket(byte[] pktData, int pktLen) {
         String message = new String(pktData, 0, pktLen).trim(); // Exclude end-of-transmission character
 
         switch (message.charAt(0)) {

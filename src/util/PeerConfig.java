@@ -51,8 +51,8 @@ public class PeerConfig {
         File    configPeer = new File("config_peer.txt"),
                 configSharing = new File("config_sharing.txt");
 
+        // Read in ports
         try (BufferedReader br = new BufferedReader(new FileReader(configPeer))) {
-            // Read in UDP ports
             String udpClientPortText = br.readLine();
             String welcomePortText = br.readLine();
             String transferPortText = br.readLine();
@@ -73,10 +73,10 @@ public class PeerConfig {
         try (BufferedReader br = new BufferedReader(new FileReader(configSharing))) {
             String path;
             while ((path = br.readLine()) != null) {
-                File file = new File("~/p2p/sharing/" + path);
+                File file = new File("./shared/" + path);
                 // Check that this file exists and is a file
                 if (!file.exists() || !file.isFile()) {
-                    throw new FileNotFoundException("Could not read ~/p2p/sharing/" + path + ". Check that this file exists.");
+                    throw new FileNotFoundException("Could not read ./shared/" + path + ". Check that this file exists.");
                 }
                 sharedFileList.add(file);
             }

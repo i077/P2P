@@ -62,6 +62,12 @@ public class Messages {
     public static String REQ_TFER(Response r) {
         return "Requesting a transfer of file \"" + r.getFilename() + "\" from " + r.getOrigin().getHostAddress() + ".";
     }
+    public static String TFER_REQRECV(String filename, String ip) {
+        return "Received a request from " + ip + "to transfer file \"" + filename + "\".";
+    }
+    public static String TFER_FINISHED(String filename, String ip) {
+        return "Sent file \"" + filename + "\" to " + ip + ".";
+    }
 
     // Error messages
     public static String SHELL_CNF = " is not a valid command.";
@@ -105,4 +111,6 @@ public class Messages {
     public static String ERR_SOCKCLOSE = "There was a problem closing a socket.";
 
     public static String CONN_PKTWEIRD = "Received an unrecognized packet.";
+
+    public static String ERR_TFER_SEND = "There was a problem sending a file.";
 }
