@@ -38,11 +38,11 @@ public class Connection extends AbstractConnection {
     /**
      * Thread that listens on socket and sends heartbeat via two Timers.
      */
-    public Thread listener;
+    Thread listener;
 
-    public Connection(final Socket socket,
-                      Map<Integer, Query> queries,
-                      final Map<InetAddress, Connection> connections) {
+    Connection(final Socket socket,
+               Map<Integer, Query> queries,
+               final Map<InetAddress, Connection> connections) {
         this.neighborAddr = socket.getInetAddress();
         this.socket = socket;
         this.queries = queries;
@@ -267,14 +267,13 @@ public class Connection extends AbstractConnection {
         if (coQuery.originAddr == null) {
             Log.i(Messages.REQ_TFER(response));
             // Initiate transfer request
-            ReceiveConnection recvConn = null;
             try {
-                recvConn = new ReceiveConnection(response);
+                ReceiveConnection recvConn = new ReceiveConnection(response);
+                recvConn.requester.start();
+                recvConn.receiver.start();
             } catch (IOException e) {
                 Log.e(Messages.ERR_SOCKOPEN, e);
             }
-            recvConn.requester.start();
-            recvConn.receiver.start();
         } else {
             // Forward the response through the appropriate connection
             Connection originConn = connections.get(coQuery.originAddr);

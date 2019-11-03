@@ -34,7 +34,6 @@ public class PeerConfig {
     }
 
     public final int udpClientPort, welcomePort, transferPort;
-    public final ArrayList<Integer> availTCPPorts;
     public final List<File> sharedFileList;
 
     public static PeerConfig get() {
@@ -47,7 +46,7 @@ public class PeerConfig {
      * @throws IOException If one of the two config files could not be read.
      * @throws FileNotFoundException If a file to be shared could not be found.
      */
-    public PeerConfig() throws IOException, FileNotFoundException {
+    private PeerConfig() throws IOException, FileNotFoundException {
         File    configPeer = new File("config_peer.txt"),
                 configSharing = new File("config_sharing.txt");
 
@@ -59,13 +58,6 @@ public class PeerConfig {
             udpClientPort = Integer.parseInt(udpClientPortText);
             welcomePort = Integer.parseInt(welcomePortText);
             transferPort = Integer.parseInt(transferPortText);
-
-            // Read in TCP ports
-            availTCPPorts = new ArrayList<>();
-            String remainingLine;
-            while ((remainingLine = br.readLine()) != null) {
-                availTCPPorts.add(Integer.parseInt(remainingLine));
-            }
         }
 
         // Read in shared files

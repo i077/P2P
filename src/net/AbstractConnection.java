@@ -18,7 +18,7 @@ public abstract class AbstractConnection {
      *
      * @return true if the socket is connected, false otherwise
      */
-    public boolean isAlive() {
+    boolean isAlive() {
         return !socket.isClosed() && socket.isConnected();
     }
 

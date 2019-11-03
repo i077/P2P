@@ -7,7 +7,6 @@ import util.Values;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -18,7 +17,7 @@ import java.util.TimerTask;
  * This class is used by the peer sending the file, whereas the peer receiving the file will use a ReceiveConnection.
  */
 public class TransferConnection extends AbstractConnection {
-    public Thread listener;
+    Thread listener;
     private Timer reader;
 
     TransferConnection(final Socket socket) {

@@ -23,7 +23,7 @@ public class Peer {
     /**
      * Threads to listen for any incoming connections
      */
-    public Thread welcomeSocketListener, transferSocketListener;
+    private Thread welcomeSocketListener, transferSocketListener;
     private boolean welcomeListenerRunning, transferListenerRunning;
 
     private DiscoveryClient discoveryClient;
