@@ -21,9 +21,8 @@ import java.util.*;
  *
  * Each peer in a connection has this object so its Peer instance can manage their respective sides.
  */
-public class Connection {
+public class Connection extends AbstractConnection {
     InetAddress neighborAddr;
-    private Socket connectionSocket;
 
     private Map<Integer, Query> queries;
     private final Map<InetAddress, Connection> connections;
@@ -41,11 +40,11 @@ public class Connection {
      */
     public Thread listener;
 
-    public Connection(Socket socket,
+    public Connection(final Socket socket,
                       Map<Integer, Query> queries,
                       final Map<InetAddress, Connection> connections) {
         this.neighborAddr = socket.getInetAddress();
-        this.connectionSocket = socket;
+        this.socket = socket;
         this.queries = queries;
         this.connections = connections;
         this.sharedFileList = PeerConfig.get().sharedFileList;
@@ -89,7 +88,7 @@ public class Connection {
                         int recvLen = -1;
                         do {
                             try {
-                                recvLen = connectionSocket.getInputStream().read(recvBuf);
+                                recvLen = socket.getInputStream().read(recvBuf);
                             } catch (IOException e) {
                                 // Only log an error if the connection is still alive, otherwise stop
                                 if (Connection.this.isAlive())
@@ -108,22 +107,13 @@ public class Connection {
     }
 
     /**
-     * Returns whether this connection is still alive, i.e. whether the socket's connection is still active.
-     *
-     * @return true if the socket is connected, false otherwise
-     */
-    public boolean isAlive() {
-        return !connectionSocket.isClosed() && connectionSocket.isConnected();
-    }
-
-    /**
      * Write a peer message to the socket, sending it to the other peer.
      *
      * @param msg The PeerMessage to send to the other peer.
      * @throws IOException if the socket had a problem sending the message.
      */
     void sendPeerMessage(PeerMessage msg) throws IOException {
-        connectionSocket.getOutputStream().write(msg.toString().getBytes());
+        socket.getOutputStream().write(msg.toString().getBytes());
     }
 
     /**
@@ -133,15 +123,12 @@ public class Connection {
      * This should be called if the connection becomes stale (i.e. no heartbeat was received within the timeout interval),
      * or if the client is exiting.
      */
+    @Override
     void teardown() {
         heartbeat.cancel();
         reader.cancel();
 
-        try {
-            connectionSocket.close();
-        } catch (IOException e) {
-            Log.e(Messages.ERR_SOCKCLOSE, e);
-        }
+        super.teardown();
     }
 
     /**
@@ -170,7 +157,7 @@ public class Connection {
                 String[] queryParts = message.substring(2) // Exclude "Q:"
                         .split(";");
                 Query query = new Query(Integer.parseInt(queryParts[0]), queryParts[1]);
-                query.originAddr = connectionSocket.getInetAddress();
+                query.originAddr = socket.getInetAddress();
                 processQuery(query);
                 break;
             case 'R': // Packet is a response
@@ -225,7 +212,7 @@ public class Connection {
             Log.i(Messages.QUERY_HASFILE(query));
             Response newResponse = new Response(query);
 
-            Log.i(Messages.RESP_SEND(newResponse, connectionSocket.getInetAddress().getHostAddress()));
+            Log.i(Messages.RESP_SEND(newResponse, socket.getInetAddress().getHostAddress()));
             try {
                 sendPeerMessage(newResponse);
             } catch (IOException e) {
@@ -289,22 +276,5 @@ public class Connection {
                     Log.e(Messages.ERR_RESPFWD(originConn.neighborAddr.getHostAddress()));
             }
         }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(connectionSocket.getInetAddress().getHostAddress());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || this.getClass() != obj.getClass())
-            return false;
-        Connection that = (Connection) obj;
-        // Treat connections with the same peer as the same
-        return this.connectionSocket.getInetAddress().getHostAddress()
-                .equals(that.connectionSocket.getInetAddress().getHostAddress());
     }
 }
